@@ -1,0 +1,50 @@
+{
+  "name": "exchange-service",
+  "version": "1.0.0-alpha",
+  "description": "Access to exchanges as service",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cryptokupets/exchange-service.git"
+  },
+  "homepage": "https://github.com/cryptokupets/exchange-service",
+  "bugs": {
+    "url": "https://github.com/cryptokupets/exchange-service/issues"
+  },
+  "scripts": {
+    "prebuild": "tslint -c tslint.json -p tsconfig.json --fix",
+    "build": "tsc",
+    "test": "mocha"
+  },
+  "keywords": [
+    "ticker",
+    "exchange"
+  ],
+  "author": {
+    "name": "Dmitry Fokin"
+  },
+  "engines": {
+    "node": ">= 12.10.0",
+    "npm": ">= 6.11.3"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "hitbtc-connect": "^1.0.1-alpha",
+    "moment": "^2.24.0"
+  },
+  "main": "lib/index.js",
+  "devDependencies": {
+    "@types/node": "^12.7.4",
+    "babel-cli": "^6.26.0",
+    "babel-plugin-transform-class-properties": "^6.24.1",
+    "babel-plugin-transform-decorators-legacy": "^1.3.5",
+    "babel-plugin-transform-es2015-modules-commonjs": "^6.26.2",
+    "babel-preset-env": "^1.7.0",
+    "chai": "^4.2.0",
+    "mocha": "^6.2.1",
+    "tslint": "^5.19.0",
+    "typescript": "^3.6.2"
+  },
+  "files": [
+    "lib/**/*"
+  ]
+}
