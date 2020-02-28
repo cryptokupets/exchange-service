@@ -39,15 +39,8 @@ interface IMarketDataSource {
     asset: string;
     period: number;
   }): Readable;
-  getTicker(options: {
-    currency: string;
-    asset: string;
-    period: number;
-  }): Promise<ITicker>;
-  liveTicker(options: {
-    currency: string;
-    asset: string;
-  }): Readable;
+  getTicker(options: { currency: string; asset: string }): Promise<ITicker>;
+  liveTicker(options: { currency: string; asset: string }): Readable;
 }
 
 export function getPairs(
@@ -193,11 +186,11 @@ export function liveCandles({
   asset: string;
   period: number;
 }): Readable {
- return getExchange(exchange).liveCandles({
-  currency,
-  asset,
-  period
-});
+  return getExchange(exchange).liveCandles({
+    currency,
+    asset,
+    period
+  });
 }
 
 export function liveTicker({
@@ -209,10 +202,10 @@ export function liveTicker({
   currency: string;
   asset: string;
 }): Readable {
- return getExchange(exchange).liveTicker({
-  currency,
-  asset
-});
+  return getExchange(exchange).liveTicker({
+    currency,
+    asset
+  });
 }
 
 export function getTicker({
@@ -224,9 +217,8 @@ export function getTicker({
   currency: string;
   asset: string;
 }): Promise<ITicker> {
- return getExchange(exchange).getTicker({
-  currency,
-  asset
-});
-}
+  return getExchange(exchange).getTicker({
+    currency,
+    asset
+  });
 }
