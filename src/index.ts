@@ -1,6 +1,7 @@
 import { Exchange as Hitbtc } from "hitbtc-connect";
 import moment from "moment";
 import { Readable } from "stream";
+export { TickerService } from "./TickerService";
 
 const exchanges: any = {
   hitbtc: new Hitbtc()
