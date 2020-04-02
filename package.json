@@ -1,6 +1,6 @@
 {
   "name": "exchange-service",
-  "version": "1.0.2-alpha",
+  "version": "1.0.3-alpha",
   "description": "Access to exchanges as service",
   "repository": {
     "type": "git",
@@ -28,7 +28,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "hitbtc-connect": "^1.0.1-alpha",
+    "hitbtc-connect": "^1.0.2-alpha",
     "moment": "^2.24.0"
   },
   "main": "lib/index.js",
