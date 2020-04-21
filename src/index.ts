@@ -1,3 +1,4 @@
+import { EventEmitter } from "events";
 import { Exchange as Hitbtc } from "hitbtc-connect";
 import moment from "moment";
 import { Readable } from "stream";
@@ -221,4 +222,93 @@ export function getTicker({
     currency,
     asset
   });
+}
+
+export class ExchangeService extends EventEmitter {
+  public static async getTicker(options: {
+    exchange: string;
+    currency: string;
+    asset: string;
+  }): Promise<ITicker> {
+    return getTicker(options);
+  }
+
+  public static getTickerStream({
+    exchange,
+    currency,
+    asset
+  }: {
+    exchange: string;
+    currency: string;
+    asset: string;
+  }): Readable {
+    return liveTicker({ exchange, currency, asset });
+  }
+
+  public exchange: string;
+  public currency: string;
+  public asset: string;
+  public period: number;
+  private tickerStream: Readable;
+  private candlesStream: Readable;
+
+  constructor(options: {
+    exchange: string;
+    currency: string;
+    asset: string;
+    period: number;
+  }) {
+    super();
+    Object.assign(this, options);
+  }
+
+  public onTicker(listner: (...args: any[]) => void) {
+    this.on("ticker", listner);
+  }
+
+  public onCandles(listner: (...args: any[]) => void) {
+    this.on("candles", listner);
+  }
+
+  public subscribeTicker() {
+    const { exchange, currency, asset } = this;
+    const stream = liveTicker({ exchange, currency, asset });
+    this.tickerStream = stream;
+    stream.on("data", (ticker: ITicker) => {
+      this.emit("ticker", ticker);
+    });
+  }
+
+  public unsubscribeTicker() {
+    if (this.tickerStream) {
+      this.tickerStream.destroy();
+    }
+    // TODO сначала отписать
+  }
+
+  public async getTicker(): Promise<ITicker> {
+    const { exchange, currency, asset } = this;
+    return getTicker({ exchange, currency, asset });
+  }
+
+  public subscribeCandles() {
+    const { exchange, currency, asset, period } = this;
+    const stream = liveCandles({ exchange, currency, asset, period });
+    this.candlesStream = stream;
+    stream.on("data", (candles: ICandle[]) => {
+      this.emit("candles", candles);
+    });
+  }
+
+  public unsubscribeCandles() {
+    if (this.candlesStream) {
+      this.candlesStream.destroy();
+    }
+    // TODO сначала отписать
+  }
+
+  public getCandles({ begin, end }: { begin: string; end: string }): Readable {
+    const { exchange, currency, asset, period } = this;
+    return importCandles({ exchange, currency, asset, period, begin, end });
+  }
 }
