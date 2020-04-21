@@ -1,6 +1,6 @@
 {
   "name": "exchange-service",
-  "version": "1.0.3-alpha",
+  "version": "1.0.4-alpha",
   "description": "Access to exchanges as service",
   "repository": {
     "type": "git",

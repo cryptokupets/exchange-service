@@ -4,311 +4,253 @@ import moment from "moment";
 import { Readable } from "stream";
 
 const exchanges: any = {
-  hitbtc: new Hitbtc()
+    hitbtc: new Hitbtc(),
 };
 
 function getExchange(exchange: string): IMarketDataSource {
-  return exchanges[exchange] as IMarketDataSource;
+    return exchanges[exchange] as IMarketDataSource;
 }
 
 export interface ICandle {
-  time: string;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
+    time: string;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume: number;
 }
 
 export interface ITicker {
-  ask: number;
-  bid: number;
+    ask: number;
+    bid: number;
 }
 
 interface IMarketDataSource {
-  getPairs(): Promise<Array<{ currency: string; asset: string }>>;
-  getPeriods(): Promise<number[]>;
-  getCandles(options: {
-    currency: string;
-    asset: string;
-    period: number;
-    start: string;
-    end: string;
-  }): Promise<ICandle[]>;
-  liveCandles(options: {
-    currency: string;
-    asset: string;
-    period: number;
-  }): Readable;
-  getTicker(options: { currency: string; asset: string }): Promise<ITicker>;
-  liveTicker(options: { currency: string; asset: string }): Readable;
+    getPairs(): Promise<Array<{ currency: string; asset: string }>>;
+    getPeriods(): Promise<number[]>;
+    getCandles(options: {
+        currency: string;
+        asset: string;
+        period: number;
+        start: string;
+        end: string;
+    }): Promise<ICandle[]>;
+    liveCandles(options: {
+        currency: string;
+        asset: string;
+        period: number;
+    }): Readable;
+    getTicker(options: { currency: string; asset: string }): Promise<ITicker>;
+    liveTicker(options: { currency: string; asset: string }): Readable;
 }
 
 export function getPairs(
-  exchange: string
+    exchange: string
 ): Promise<Array<{ currency: string; asset: string }>> {
-  return getExchange(exchange).getPairs();
+    return getExchange(exchange).getPairs();
 }
 
 export function getPeriods(exchange: string): Promise<number[]> {
-  return getExchange(exchange).getPeriods();
+    return getExchange(exchange).getPeriods();
 }
 
 export function getExchanges(): string[] {
-  return Object.keys(exchanges);
+    return Object.keys(exchanges);
 }
 
 // DEPRICATED
 export function streamCandle({
-  exchange,
-  currency,
-  asset,
-  period,
-  start,
-  end
-}: {
-  exchange: string;
-  currency: string;
-  asset: string;
-  period: number;
-  start?: string;
-  end?: string;
-}): Readable {
-  let startMoment = moment.utc(start);
-  const rs = new Readable({
-    read: async () => {
-      if (!end) {
-        const now = moment().utc();
-        const delay = Math.max(
-          moment(startMoment)
-            .add(period, "m")
-            .diff(now),
-          0
-        );
-        setTimeout(async () => {
-          const nowMoment = moment().utc();
-          const minutes = Math.floor(
-            Math.floor(nowMoment.get("m") / period) * period
-          );
-          const endMoment = moment(nowMoment)
-            .startOf("h")
-            .minute(minutes)
-            .add(-1, "s");
-
-          const response = await getExchange(exchange).getCandles({
-            currency,
-            asset,
-            period,
-            start: startMoment.toISOString(),
-            end: endMoment.toISOString()
-          });
-
-          if (response.length) {
-            startMoment = moment
-              .utc(response[response.length - 1].time)
-              .add(period, "m");
-            rs.push(JSON.stringify(response));
-          } else {
-            startMoment = moment(endMoment).add(1, "s");
-            rs.push(JSON.stringify([]));
-          }
-        }, delay);
-      } else if (startMoment.isSameOrBefore(moment.utc(end))) {
-        const response = await getExchange(exchange).getCandles({
-          currency,
-          asset,
-          period,
-          start: startMoment.toISOString(),
-          end
-        });
-        if (response.length) {
-          startMoment = moment
-            .utc(response[response.length - 1].time)
-            .add(period, "m");
-          rs.push(JSON.stringify(response));
-        }
-      } else {
-        rs.push(null);
-      }
-    }
-  });
-  return rs;
-}
-
-export function importCandles({
-  exchange,
-  currency,
-  asset,
-  period,
-  begin,
-  end
-}: {
-  exchange: string;
-  currency: string;
-  asset: string;
-  period: number;
-  begin: string;
-  end: string;
-}): Readable {
-  let beginMoment = moment.utc(begin);
-  const rs = new Readable({
-    objectMode: true,
-    read: async () => {
-      if (beginMoment.isSameOrBefore(moment.utc(end))) {
-        const response = await getExchange(exchange).getCandles({
-          currency,
-          asset,
-          period,
-          start: beginMoment.toISOString(),
-          end
-        });
-        if (response.length) {
-          beginMoment = moment
-            .utc(response[response.length - 1].time)
-            .add(period, "m");
-          rs.push(response);
-        }
-      } else {
-        rs.push(null);
-      }
-    }
-  });
-  return rs;
-}
-
-export function liveCandles({
-  exchange,
-  currency,
-  asset,
-  period
-}: {
-  exchange: string;
-  currency: string;
-  asset: string;
-  period: number;
-}): Readable {
-  return getExchange(exchange).liveCandles({
-    currency,
-    asset,
-    period
-  });
-}
-
-export function liveTicker({
-  exchange,
-  currency,
-  asset
-}: {
-  exchange: string;
-  currency: string;
-  asset: string;
-}): Readable {
-  return getExchange(exchange).liveTicker({
-    currency,
-    asset
-  });
-}
-
-export function getTicker({
-  exchange,
-  currency,
-  asset
-}: {
-  exchange: string;
-  currency: string;
-  asset: string;
-}): Promise<ITicker> {
-  return getExchange(exchange).getTicker({
-    currency,
-    asset
-  });
-}
-
-export class ExchangeService extends EventEmitter {
-  public static async getTicker(options: {
-    exchange: string;
-    currency: string;
-    asset: string;
-  }): Promise<ITicker> {
-    return getTicker(options);
-  }
-
-  public static getTickerStream({
     exchange,
     currency,
-    asset
-  }: {
-    exchange: string;
-    currency: string;
-    asset: string;
-  }): Readable {
-    return liveTicker({ exchange, currency, asset });
-  }
-
-  public exchange: string;
-  public currency: string;
-  public asset: string;
-  public period: number;
-  private tickerStream: Readable;
-  private candlesStream: Readable;
-
-  constructor(options: {
+    asset,
+    period,
+    start,
+    end,
+}: {
     exchange: string;
     currency: string;
     asset: string;
     period: number;
-  }) {
-    super();
-    Object.assign(this, options);
-  }
+    start?: string;
+    end?: string;
+}): Readable {
+    let startMoment = moment.utc(start);
+    const rs = new Readable({
+        read: async () => {
+            if (!end) {
+                const now = moment().utc();
+                const delay = Math.max(
+                    moment(startMoment).add(period, "m").diff(now),
+                    0
+                );
+                setTimeout(async () => {
+                    const nowMoment = moment().utc();
+                    const minutes = Math.floor(
+                        Math.floor(nowMoment.get("m") / period) * period
+                    );
+                    const endMoment = moment(nowMoment)
+                        .startOf("h")
+                        .minute(minutes)
+                        .add(-1, "s");
 
-  public onTicker(listner: (...args: any[]) => void) {
-    this.on("ticker", listner);
-  }
+                    const response = await getExchange(exchange).getCandles({
+                        currency,
+                        asset,
+                        period,
+                        start: startMoment.toISOString(),
+                        end: endMoment.toISOString(),
+                    });
 
-  public onCandles(listner: (...args: any[]) => void) {
-    this.on("candles", listner);
-  }
-
-  public subscribeTicker() {
-    const { exchange, currency, asset } = this;
-    const stream = liveTicker({ exchange, currency, asset });
-    this.tickerStream = stream;
-    stream.on("data", (ticker: ITicker) => {
-      this.emit("ticker", ticker);
+                    if (response.length) {
+                        startMoment = moment
+                            .utc(response[response.length - 1].time)
+                            .add(period, "m");
+                        rs.push(JSON.stringify(response));
+                    } else {
+                        startMoment = moment(endMoment).add(1, "s");
+                        rs.push(JSON.stringify([]));
+                    }
+                }, delay);
+            } else if (startMoment.isSameOrBefore(moment.utc(end))) {
+                const response = await getExchange(exchange).getCandles({
+                    currency,
+                    asset,
+                    period,
+                    start: startMoment.toISOString(),
+                    end,
+                });
+                if (response.length) {
+                    startMoment = moment
+                        .utc(response[response.length - 1].time)
+                        .add(period, "m");
+                    rs.push(JSON.stringify(response));
+                }
+            } else {
+                rs.push(null);
+            }
+        },
     });
-  }
+    return rs;
+}
 
-  public unsubscribeTicker() {
-    if (this.tickerStream) {
-      this.tickerStream.destroy();
-    }
-    // TODO сначала отписать
-  }
-
-  public async getTicker(): Promise<ITicker> {
-    const { exchange, currency, asset } = this;
-    return getTicker({ exchange, currency, asset });
-  }
-
-  public subscribeCandles() {
-    const { exchange, currency, asset, period } = this;
-    const stream = liveCandles({ exchange, currency, asset, period });
-    this.candlesStream = stream;
-    stream.on("data", (candles: ICandle[]) => {
-      this.emit("candles", candles);
+export function importCandles({
+    exchange,
+    currency,
+    asset,
+    period,
+    begin,
+    end,
+}: {
+    exchange: string;
+    currency: string;
+    asset: string;
+    period: number;
+    begin: string;
+    end: string;
+}): Readable {
+    let beginMoment = moment.utc(begin);
+    const rs = new Readable({
+        objectMode: true,
+        read: async () => {
+            if (beginMoment.isSameOrBefore(moment.utc(end))) {
+                const response = await getExchange(exchange).getCandles({
+                    currency,
+                    asset,
+                    period,
+                    start: beginMoment.toISOString(),
+                    end,
+                });
+                if (response.length) {
+                    beginMoment = moment
+                        .utc(response[response.length - 1].time)
+                        .add(period, "m");
+                    rs.push(response);
+                }
+            } else {
+                rs.push(null);
+            }
+        },
     });
-  }
+    return rs;
+}
 
-  public unsubscribeCandles() {
-    if (this.candlesStream) {
-      this.candlesStream.destroy();
+export function liveCandles({
+    exchange,
+    currency,
+    asset,
+    period,
+}: {
+    exchange: string;
+    currency: string;
+    asset: string;
+    period: number;
+}): Readable {
+    return getExchange(exchange).liveCandles({
+        currency,
+        asset,
+        period,
+    });
+}
+
+export function liveTicker({
+    exchange,
+    currency,
+    asset,
+}: {
+    exchange: string;
+    currency: string;
+    asset: string;
+}): Readable {
+    return getExchange(exchange).liveTicker({
+        currency,
+        asset,
+    });
+}
+
+export function getTicker({
+    exchange,
+    currency,
+    asset,
+}: {
+    exchange: string;
+    currency: string;
+    asset: string;
+}): Promise<ITicker> {
+    return getExchange(exchange).getTicker({
+        currency,
+        asset,
+    });
+}
+
+export class ExchangeService extends EventEmitter {
+    public static getCandles(options: {
+        exchange: string;
+        currency: string;
+        asset: string;
+        period: number;
+        begin: string;
+        end: string;
+    }): Readable {
+        return importCandles(options);
     }
-    // TODO сначала отписать
-  }
 
-  public getCandles({ begin, end }: { begin: string; end: string }): Readable {
-    const { exchange, currency, asset, period } = this;
-    return importCandles({ exchange, currency, asset, period, begin, end });
-  }
+    public static async getTicker(options: {
+        exchange: string;
+        currency: string;
+        asset: string;
+    }): Promise<ITicker> {
+        return getTicker(options);
+    }
+
+    public static getTickerStream({
+        exchange,
+        currency,
+        asset,
+    }: {
+        exchange: string;
+        currency: string;
+        asset: string;
+    }): Readable {
+        return liveTicker({ exchange, currency, asset });
+    }
 }
