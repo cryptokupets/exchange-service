@@ -1,7 +1,7 @@
 import { EventEmitter } from "events";
 import { Exchange as Hitbtc } from "hitbtc-connect";
 import moment from "moment";
-import { Readable } from "stream";
+import { Readable, Transform } from "stream";
 
 const exchanges: any = {
     hitbtc: new Hitbtc(),
@@ -231,7 +231,25 @@ export class ExchangeService extends EventEmitter {
         begin: string;
         end: string;
     }): Readable {
-        return importCandles(options);
+        const rs = importCandles(options);
+        const ts = new Transform({
+            objectMode: true,
+            transform: async (chunk, encoding, callback) => {
+                const candles: ICandle[] = chunk as ICandle[];
+                while (candles.length) {
+                    const candle = candles.shift();
+                    ts.push(candle);
+                }
+                callback();
+            },
+            destroy: (err, callback) => {
+                rs.on("end", () => {
+                    callback(err);
+                });
+                rs.destroy(err);
+            },
+        });
+        return rs.pipe(ts);
     }
 
     public static async getTicker(options: {
