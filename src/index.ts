@@ -242,8 +242,29 @@ export class ExchangeService extends EventEmitter {
                 }
                 callback();
             },
+        });
+        return rs.pipe(ts);
+    }
+
+    public static getCandleStream(options: {
+        exchange: string;
+        currency: string;
+        asset: string;
+        period: number;
+    }): Readable {
+        const rs = liveCandles(options);
+        const ts = new Transform({
+            objectMode: true,
+            transform: async (chunk, encoding, callback) => {
+                const candles: ICandle[] = chunk as ICandle[];
+                while (candles.length) {
+                    const candle = candles.shift();
+                    ts.push(candle);
+                }
+                callback();
+            },
             destroy: (err, callback) => {
-                rs.on("end", () => {
+                rs.on("close", () => {
                     callback(err);
                 });
                 rs.destroy(err);
@@ -260,15 +281,11 @@ export class ExchangeService extends EventEmitter {
         return getTicker(options);
     }
 
-    public static getTickerStream({
-        exchange,
-        currency,
-        asset,
-    }: {
+    public static getTickerStream(options: {
         exchange: string;
         currency: string;
         asset: string;
     }): Readable {
-        return liveTicker({ exchange, currency, asset });
+        return liveTicker(options);
     }
 }

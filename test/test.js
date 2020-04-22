@@ -36,6 +36,41 @@ describe("ExchangeService", () => {
         });
     });
 
+    it("getCandleStream", function (done) {
+        this.timeout(5000);
+        const options = {
+            exchange: "hitbtc",
+            currency: "USD",
+            asset: "BTC",
+            period: 1,
+        };
+
+        assert.isFunction(ExchangeService.getCandleStream);
+
+        const stream = ExchangeService.getCandleStream(options);
+        stream.on("data", (candle) => {
+            assert.isObject(candle);
+            assert.property(candle, "time");
+            assert.property(candle, "open");
+            assert.property(candle, "high");
+            assert.property(candle, "low");
+            assert.property(candle, "close");
+            assert.property(candle, "volume");
+            assert.isString(candle.time);
+            assert.isNumber(candle.open);
+            assert.isNumber(candle.high);
+            assert.isNumber(candle.low);
+            assert.isNumber(candle.close);
+            assert.isNumber(candle.volume);
+        });
+        setTimeout(() => {
+            stream.destroy();
+        }, 1000);
+        stream.on("close", () => {
+            done();
+        });
+    });
+
     it("getTicker", function (done) {
         const options = {
             exchange: "hitbtc",
